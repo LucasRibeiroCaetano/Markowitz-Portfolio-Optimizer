@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
 
-# Estes imports respeitam a sua estrutura:
-# data.py, model.py, optimization.py, plots.py
+# Import your modules
 from portfolio_optimizer.data import get_annualized_inputs
 from portfolio_optimizer.model import get_portfolio_stats
 from portfolio_optimizer.optimization import (
@@ -12,7 +11,7 @@ from portfolio_optimizer.optimization import (
 )
 from portfolio_optimizer.plots import plot_results
 
-# --- UPDATED 10-ASSET LIST ---
+# Define your project parameters
 TICKERS = [
     'AAPL', 'MSFT', 'GOOG', 'TSLA', 'AMZN', 
     'NVDA', 'META', 'JPM', 'SPY', 'QQQ'
@@ -21,6 +20,30 @@ START_DATE = '2020-01-01'
 END_DATE = '2024-12-31'
 RISK_FREE_RATE = 0.02 # 2%
 
+
+# --- NEW HELPER FUNCTION ---
+def print_portfolio_composition(name: str, weights: np.ndarray, tickers: list[str]):
+    """
+    Prints a formatted summary of portfolio weights.
+    Filters out any weights less than 0.1% for clarity.
+    """
+    print(f"\n--- Composition: {name} ---")
+    
+    # Create a DataFrame for easy formatting
+    composition = pd.DataFrame({'Weight': weights}, index=tickers)
+    # Filter small weights and sort descending
+    composition = composition[composition['Weight'] > 0.001]
+    composition = composition.sort_values(by='Weight', ascending=False)
+    
+    # Format as percentage
+    composition['Weight'] = composition['Weight'].apply(lambda x: f"{x:,.2%}")
+    
+    if composition.empty:
+        print("No significant weights.")
+    else:
+        print(composition)
+
+# --- Main analysis function ---
 def run_analysis():
     print("Starting Portfolio Analysis...")
     print(f"Fetching data for: {', '.join(TICKERS)}\n")
@@ -66,7 +89,7 @@ def run_analysis():
         # --- 4. Calculate Sample Model Portfolios (for Analysis) ---
         print("Calculating Sample Portfolios...")
         num_assets = len(TICKERS)
-        sample_portfolios = {} # Initialize dictionary
+        sample_portfolios = {} 
 
         # Model 1: Equally Weighted (1/n)
         equal_weights = np.array([1 / num_assets] * num_assets)
@@ -90,12 +113,23 @@ def run_analysis():
         )
         frontier_data = (frontier_volatilities, frontier_returns)
         
-        # --- 6. Plot All Results ---
-        # *** LINHA CORRIGIDA ***
+        # --- 6. PRINT COMPOSITION (Your New Feature) ---
+        print_portfolio_composition(
+            "Max Sharpe Ratio", max_sharpe_weights, TICKERS
+        )
+        print_portfolio_composition(
+            "Min Volatility", min_vol_weights, TICKERS
+        )
+        print_portfolio_composition(
+            "Equally Weighted (1/n)", equal_weights, TICKERS
+        )
+        
+        # --- 7. Plot All Results ---
+        print("\nDisplaying results plot...")
         plot_results(
             frontier_data=frontier_data,
             optimal_portfolios=optimal_portfolios,
-            sample_portfolios=sample_portfolios, # Corrigido de 'sample_postfolios'
+            sample_portfolios=sample_portfolios,
             individual_assets=individual_assets
         )
 

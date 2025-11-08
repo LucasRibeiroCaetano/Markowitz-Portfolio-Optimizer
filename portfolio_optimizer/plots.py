@@ -16,9 +16,10 @@ def plot_results(
     # 1. Get the data from the inputs
     frontier_volatilities, frontier_returns = frontier_data
     
-    # 2. Apply the 'matplotx' and 'nord' style
-    # This gives the clean look you wanted
-    plt.style.use(matplotx.styles.nord)
+    try:
+        plt.style.use(matplotx.styles.nord)
+    except:
+        plt.style.use("ggplot") # Fallback style
     
     # 3. Create the plot
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -32,15 +33,21 @@ def plot_results(
     )
     
     # 5. Plot Individual Assets (as dots)
-    # We unpack the dictionary items
-    for ticker, (vol, ret) in individual_assets.items():
-        ax.scatter(
-            vol, 
-            ret, 
-            marker='o', 
-            s=50, 
-            label=f'Individual: {ticker}'
-        )
+    # --- THIS IS THE MODIFIED SECTION ---
+    # Unpack all asset stats into two lists for a single plot call
+    asset_vols = [v[0] for v in individual_assets.values()]
+    asset_rets = [v[1] for v in individual_assets.values()]
+    
+    # Plot all assets in one go with a neutral color and single label
+    ax.scatter(
+        asset_vols, 
+        asset_rets, 
+        marker='o', 
+        s=50, 
+        color='grey', # Use a neutral color
+        label='Individual Assets' # Single legend entry
+    )
+    # --- END OF MODIFIED SECTION ---
 
     # 6. Plot Sample Portfolios (as 'X's)
     for name, (vol, ret) in sample_portfolios.items():
@@ -74,5 +81,5 @@ def plot_results(
     plt.tight_layout()
     
     # Finally, display the plot
-    print("Displaying results plot...")
+    # (Print statement moved to main.py)
     plt.show()
