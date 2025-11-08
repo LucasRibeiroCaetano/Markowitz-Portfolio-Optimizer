@@ -11,37 +11,30 @@ from portfolio_optimizer.optimization import (
 )
 from portfolio_optimizer.plots import plot_results
 
-# Define your project parameters
+# A 10-asset basket for robust diversification
 TICKERS = [
-    'AAPL', 'MSFT', 'GOOG', 'TSLA', 'AMZN', 
-    'NVDA', 'META', 'JPM', 'SPY', 'QQQ'
+    # US Equities
+    'SPY',  # S&P 500
+    'QQQ',  # Nasdaq 100
+    'IWM',  # US Small-Cap
+    
+    # International Equities
+    'EFA',  # Developed Markets (ex-US)
+    'EEM',  # Emerging Markets
+    
+    # Fixed Income
+    'TLT',  # 20+ Year US Treasury Bonds
+    
+    # Real Assets & Commodities
+    'VNQ',  # US Real Estate
+    'GLD',  # Gold
+    'DBC',  # Broad Commodities
+    'XLE'   # Energy Sector
 ]
-START_DATE = '2020-01-01'
+# Using your updated start date
+START_DATE = '2000-01-01'
 END_DATE = '2024-12-31'
 RISK_FREE_RATE = 0.02 # 2%
-
-
-# --- NEW HELPER FUNCTION ---
-def print_portfolio_composition(name: str, weights: np.ndarray, tickers: list[str]):
-    """
-    Prints a formatted summary of portfolio weights.
-    Filters out any weights less than 0.1% for clarity.
-    """
-    print(f"\n--- Composition: {name} ---")
-    
-    # Create a DataFrame for easy formatting
-    composition = pd.DataFrame({'Weight': weights}, index=tickers)
-    # Filter small weights and sort descending
-    composition = composition[composition['Weight'] > 0.001]
-    composition = composition.sort_values(by='Weight', ascending=False)
-    
-    # Format as percentage
-    composition['Weight'] = composition['Weight'].apply(lambda x: f"{x:,.2%}")
-    
-    if composition.empty:
-        print("No significant weights.")
-    else:
-        print(composition)
 
 # --- Main analysis function ---
 def run_analysis():
@@ -99,11 +92,17 @@ def run_analysis():
 
         # Model 2: 100% in Highest Return Asset
         max_ret_ticker = mean_returns.idxmax()
+        # Create and save weights for the composition table
+        max_ret_weights = np.zeros(len(TICKERS))
+        max_ret_weights[TICKERS.index(max_ret_ticker)] = 1.0
         sample_portfolios[f"100% {max_ret_ticker} (Max Ret)"] = individual_assets[max_ret_ticker]
 
         # Model 3: 100% in Lowest Risk Asset
         cov_variances = pd.Series(np.diag(cov_matrix), index=TICKERS)
         min_risk_ticker = cov_variances.idxmin()
+        # Create and save weights for the composition table
+        min_risk_weights = np.zeros(len(TICKERS))
+        min_risk_weights[TICKERS.index(min_risk_ticker)] = 1.0
         sample_portfolios[f"100% {min_risk_ticker} (Min Risk)"] = individual_assets[min_risk_ticker]
         
         # --- 5. Calculate the Efficient Frontier ---
@@ -111,18 +110,20 @@ def run_analysis():
         frontier_returns, frontier_volatilities = calculate_efficient_frontier(
             mean_returns, cov_matrix
         )
+        # --- CORRECTED TYPO HERE ---
+        # Was (frontier_volatilities, frontier_volatilities)
         frontier_data = (frontier_volatilities, frontier_returns)
         
-        # --- 6. PRINT COMPOSITION (Your New Feature) ---
-        print_portfolio_composition(
-            "Max Sharpe Ratio", max_sharpe_weights, TICKERS
-        )
-        print_portfolio_composition(
-            "Min Volatility", min_vol_weights, TICKERS
-        )
-        print_portfolio_composition(
-            "Equally Weighted (1/n)", equal_weights, TICKERS
-        )
+        # --- 6. Create Composition Dictionary ---
+        # This will be passed to the plot function
+        portfolio_compositions = {
+            "Max Sharpe Ratio": max_sharpe_weights,
+            "Min Volatility": min_vol_weights,
+            "Equally Weighted (1/n)": equal_weights,
+            # --- NEW: Add the sample portfolios ---
+            "Max return": max_ret_weights,
+            "Min Risk": min_risk_weights
+        }
         
         # --- 7. Plot All Results ---
         print("\nDisplaying results plot...")
@@ -130,7 +131,10 @@ def run_analysis():
             frontier_data=frontier_data,
             optimal_portfolios=optimal_portfolios,
             sample_portfolios=sample_portfolios,
-            individual_assets=individual_assets
+            individual_assets=individual_assets,
+            # Pass new composition dict to the plot
+            portfolio_compositions=portfolio_compositions,
+            tickers=TICKERS
         )
 
     except Exception as e:
