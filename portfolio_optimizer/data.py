@@ -28,8 +28,7 @@ def calculate_returns(prices: DataFrame) -> DataFrame:
     """
     Calculates daily logarithmic returns from a DataFrame of prices.
     """
-    # We use log returns, which are generally preferred in finance
-    # for their time-additive properties.
+    # We use log returns
     log_returns = np.log(prices / prices.shift(1))
     
     # Drop the first row of NaN values that results from shifting

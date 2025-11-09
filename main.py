@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import argparse # --- NEW: Import argparse ---
+import argparse
 
 # Import your modules
 from portfolio_optimizer.data import get_annualized_inputs
@@ -9,12 +9,11 @@ from portfolio_optimizer.optimization import (
     find_max_sharpe_portfolio,
     find_min_volatility_portfolio,
     calculate_efficient_frontier,
-    # Import the naive optimizer
     find_max_naive_sharpe_portfolio
 )
 from portfolio_optimizer.plots import plot_results
 
-# --- NEW: Define defaults ---
+# --- Define defaults ---
 DEFAULT_TICKERS = [
     'SPY', 'QQQ', 'IWM', 'EFA', 'EEM', 'TLT',
     'BTC-USD', 'GLD', 'DBC', 'XLE'
@@ -23,7 +22,7 @@ DEFAULT_START_DATE = '2000-01-01'
 DEFAULT_END_DATE = '2024-12-31'
 RISK_FREE_RATE = 0.02 # This remains a global constant
 
-# --- NEW: Function to parse command-line arguments ---
+# --- Function to parse command-line arguments ---
 def parse_arguments():
     """
     Parses command-line arguments for tickers, start date, and end date.
@@ -65,7 +64,7 @@ def parse_arguments():
     
     return args
 
-# --- MODIFIED: Main analysis function ---
+# --- Main analysis function ---
 def run_analysis(tickers, start_date, end_date):
     """
     Runs the full portfolio analysis based on the provided arguments.

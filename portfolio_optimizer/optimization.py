@@ -2,7 +2,6 @@ import numpy as np
 import scipy.optimize as sco
 from pandas import DataFrame, Series 
 
-# Import from the other .py files in the same package
 from .model import get_portfolio_stats, get_negative_sharpe_ratio
 
 def find_max_sharpe_portfolio(
@@ -70,7 +69,7 @@ def calculate_efficient_frontier(
     mean_returns: Series, 
     cov_matrix: DataFrame, 
     num_portfolios: int = 100
-) -> tuple[np.ndarray, np.ndarray]: # --- MODIFIED: No longer returns weights list
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculates the efficient frontier.
     (This is the correct Markowitz method)
@@ -85,7 +84,6 @@ def calculate_efficient_frontier(
     target_returns = np.linspace(min_vol_return, max_return, num_portfolios)
     
     frontier_volatilities = []
-    # frontier_weights list removed - no longer needed
 
     def get_volatility(weights, mean_returns, cov_matrix):
         return get_portfolio_stats(weights, mean_returns, cov_matrix)[1]
@@ -110,17 +108,11 @@ def calculate_efficient_frontier(
         
         if result.success:
             frontier_volatilities.append(result.fun)
-            # frontier_weights.append(result.x) - Removed
         else:
             frontier_volatilities.append(np.nan)
-            # frontier_weights.append(np.full(num_assets, np.nan)) - Removed
 
-    # --- MODIFIED: Return only returns and volatilities ---
+    # --- Return only returns and volatilities ---
     return np.array(target_returns), np.array(frontier_volatilities)
-
-# ---
-# --- NEW FUNCTIONS (Your "Naive" Optimizer) ---
-# ---
 
 def get_negative_naive_sharpe_ratio(
     weights: np.ndarray,

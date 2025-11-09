@@ -79,7 +79,7 @@ def _plot_composition_pies(fig, compositions, tickers_list):
             y_col_2_tracker -= (pie_height + y_padding)
 
 
-# --- MODIFIED PLOT_RESULTS FUNCTION ---
+# --- PLOT_RESULTS FUNCTION ---
 def plot_results(
     frontier_data: tuple[np.ndarray, np.ndarray],
     optimal_portfolios: dict[str, tuple[float, float]],
@@ -96,7 +96,6 @@ def plot_results(
     # 1. Get the data from the inputs
     frontier_volatilities, frontier_returns = frontier_data
     
-    # 2. Apply the 'github[dark]' style (using your correct syntax)
     try:
         plt.style.use(matplotx.styles.github["dark"])
     except Exception:
@@ -117,7 +116,7 @@ def plot_results(
         label='Efficient Frontier'
     )
     
-    # 6. Plot Individual Assets (as dots)
+    # 6. Plot Individual Assets
     asset_vols = [v[0] for v in individual_assets.values()]
     asset_rets = [v[1] for v in individual_assets.values()]
     ax.scatter(
@@ -129,7 +128,7 @@ def plot_results(
         label='Individual Assets'
     )
 
-    # 7. Plot Sample Portfolios (as 'X's)
+    # 7. Plot Sample Portfolios
     for name, (vol, ret) in sample_portfolios.items():
         ax.scatter(
             vol, 
@@ -139,7 +138,7 @@ def plot_results(
             label=f'Sample: {name}'
         )
 
-    # 8. Plot Optimal Portfolios (as stars)
+    # 8. Plot Optimal Portfolios
     for name, (vol, ret) in optimal_portfolios.items():
         ax.scatter(
             vol, 
