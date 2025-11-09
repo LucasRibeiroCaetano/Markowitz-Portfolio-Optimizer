@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import argparse # --- NEW: Import argparse ---
 
 # Import your modules
 from portfolio_optimizer.data import get_annualized_inputs
@@ -13,41 +14,71 @@ from portfolio_optimizer.optimization import (
 )
 from portfolio_optimizer.plots import plot_results
 
-# A 10-asset basket for robust diversification
-TICKERS = [
-    # US Equities
-    'SPY',  # S&P 500
-    'QQQ',  # Nasdaq 100
-    'IWM',  # US Small-Cap
-    
-    # International Equities
-    'EFA',  # Developed Markets (ex-US)
-    'EEM',  # Emerging Markets
-    
-    # Fixed Income
-    'TLT',  # 20+ Year US Treasury Bonds
-    
-    # Real Assets & Commodities
-    'BTC-USD',  # Bitcoin
-    'GLD',  # Gold
-    'DBC',  # Broad Commodities
-    'XLE'   # Energy Sector
+# --- NEW: Define defaults ---
+DEFAULT_TICKERS = [
+    'SPY', 'QQQ', 'IWM', 'EFA', 'EEM', 'TLT',
+    'BTC-USD', 'GLD', 'DBC', 'XLE'
 ]
-START_DATE = '2000-01-01'
-END_DATE = '2024-12-31'
-RISK_FREE_RATE = 0.02 # 2%
+DEFAULT_START_DATE = '2000-01-01'
+DEFAULT_END_DATE = '2024-12-31'
+RISK_FREE_RATE = 0.02 # This remains a global constant
 
-# --- Main analysis function ---
-def run_analysis():
+# --- NEW: Function to parse command-line arguments ---
+def parse_arguments():
+    """
+    Parses command-line arguments for tickers, start date, and end date.
+    """
+    parser = argparse.ArgumentParser(
+        description="Markowitz Portfolio Optimizer",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    
+    parser.add_argument(
+        '-t', '--tickers',
+        nargs='+', # Accepts one or more tickers
+        default=DEFAULT_TICKERS,
+        help=f"Up to 20 asset tickers to analyze."
+    )
+    
+    parser.add_argument(
+        '-s', '--start',
+        type=str,
+        default=DEFAULT_START_DATE,
+        help="Start date in YYYY-MM-DD format."
+    )
+    
+    parser.add_argument(
+        '-e', '--end',
+        type=str,
+        default=DEFAULT_END_DATE,
+        help="End date in YYYY-MM-DD format."
+    )
+    
+    args = parser.parse_args()
+    
+    # --- NEW: Validate the 20-asset limit ---
+    if len(args.tickers) > 20:
+        parser.error(f"Maximum of 20 tickers allowed. You provided {len(args.tickers)}.")
+        
+    # Convert tickers to uppercase
+    args.tickers = [t.upper() for t in args.tickers]
+    
+    return args
+
+# --- MODIFIED: Main analysis function ---
+def run_analysis(tickers, start_date, end_date):
+    """
+    Runs the full portfolio analysis based on the provided arguments.
+    """
     print("Starting Portfolio Analysis...")
-    print(f"Fetching data for: {', '.join(TICKERS)}\n")
+    print(f"Fetching data for: {', '.join(tickers)}\n")
     
     try:
         # 1. Get data
         mean_returns, cov_matrix = get_annualized_inputs(
-            tickers=TICKERS,
-            start_date=START_DATE,
-            end_date=END_DATE
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date
         )
         
         # --- 2. Calculate Optimal Portfolios (Markowitz) ---
@@ -74,15 +105,15 @@ def run_analysis():
         # --- 3. Calculate Individual Asset Stats ---
         print("Calculating Individual Asset Stats...")
         individual_assets = {}
-        for ticker in TICKERS:
-            weights = np.zeros(len(TICKERS))
-            weights[TICKERS.index(ticker)] = 1.0
+        for ticker in tickers:
+            weights = np.zeros(len(tickers))
+            weights[tickers.index(ticker)] = 1.0
             asset_stats = get_portfolio_stats(weights, mean_returns, cov_matrix)
             individual_assets[ticker] = asset_stats
             
         # --- 4. Calculate Sample Model Portfolios (for 'X' markers) ---
         print("Calculating Sample Portfolios...")
-        num_assets = len(TICKERS)
+        num_assets = len(tickers)
         sample_portfolios = {} 
 
         # Model 1: Equally Weighted (1/n)
@@ -99,31 +130,29 @@ def run_analysis():
         naive_max_sharpe_stats = get_portfolio_stats(
             naive_max_sharpe_weights, mean_returns, cov_matrix
         )
-        sample_portfolios["Naive Max Sharpe (No Cov)"] = naive_max_sharpe_stats
+        sample_portfolios["Max Sharpe (No Cov)"] = naive_max_sharpe_stats
         
         # Model 3: 100% in Highest Return Asset
         max_ret_ticker = mean_returns.idxmax()
-        max_ret_weights = np.zeros(len(TICKERS))
-        max_ret_weights[TICKERS.index(max_ret_ticker)] = 1.0
-        sample_portfolios[f"100% {max_ret_ticker} (Max Ret)"] = individual_assets[max_ret_ticker]
+        max_ret_weights = np.zeros(len(tickers))
+        max_ret_weights[tickers.index(max_ret_ticker)] = 1.0
+        sample_portfolios["Max Return"] = individual_assets[max_ret_ticker]
 
         # Model 4: 100% in Lowest Risk Asset
-        cov_variances = pd.Series(np.diag(cov_matrix), index=TICKERS)
+        cov_variances = pd.Series(np.diag(cov_matrix), index=tickers)
         min_risk_ticker = cov_variances.idxmin()
-        min_risk_weights = np.zeros(len(TICKERS))
-        min_risk_weights[TICKERS.index(min_risk_ticker)] = 1.0
-        sample_portfolios[f"100% {min_risk_ticker} (Min Risk)"] = individual_assets[min_risk_ticker]
+        min_risk_weights = np.zeros(len(tickers))
+        min_risk_weights[tickers.index(min_risk_ticker)] = 1.0
+        sample_portfolios["Min Risk"] = individual_assets[min_risk_ticker]
         
         # --- 5. Calculate the Efficient Frontier ---
         print("Calculating Efficient Frontier...")
-        # We no longer need the frontier_weights
         frontier_returns, frontier_volatilities = calculate_efficient_frontier(
             mean_returns, cov_matrix
         )
         frontier_data = (frontier_volatilities, frontier_returns)
         
         # --- 6. Create Composition Dictionary ---
-        # This dict is for your original table
         portfolio_compositions = {
             "Max Sharpe Ratio": max_sharpe_weights,
             "Min Volatility": min_vol_weights,
@@ -139,15 +168,20 @@ def run_analysis():
             optimal_portfolios=optimal_portfolios,
             sample_portfolios=sample_portfolios,
             individual_assets=individual_assets,
-            # Pass only the original composition table
             portfolio_compositions=portfolio_compositions,
-            tickers=TICKERS
+            tickers=tickers # Pass the dynamic tickers
         )
 
     except Exception as e:
         print(f"An error occurred: {e}")
 
+# --- MODIFIED: Main execution block ---
 if __name__ == "__main__":
     pd.set_option('display.width', 100)
     pd.set_option('display.precision', 4)
-    run_analysis()
+    
+    # 1. Parse arguments from the command line
+    args = parse_arguments()
+    
+    # 2. Run the analysis with the parsed arguments
+    run_analysis(args.tickers, args.start, args.end)
