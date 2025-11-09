@@ -28,7 +28,7 @@ TICKERS = [
     'TLT',  # 20+ Year US Treasury Bonds
     
     # Real Assets & Commodities
-    'VNQ',  # US Real Estate
+    'BTC-USD',  # Bitcoin
     'GLD',  # Gold
     'DBC',  # Broad Commodities
     'XLE'   # Energy Sector
@@ -127,10 +127,10 @@ def run_analysis():
         portfolio_compositions = {
             "Max Sharpe Ratio": max_sharpe_weights,
             "Min Volatility": min_vol_weights,
-            "Naive Max Sharpe (No Cov)": naive_max_sharpe_weights,
+            "Max Sharpe (No Cov)": naive_max_sharpe_weights,
             "Equally Weighted (1/n)": equal_weights,
-            f"100% {max_ret_ticker} (Max Ret)": max_ret_weights,
-            f"100% {min_risk_ticker} (Min Risk)": min_risk_weights
+            "Max Return": max_ret_weights,
+            "Min Risk": min_risk_weights
         }
         
         # --- 7. Plot All Results ---

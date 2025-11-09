@@ -85,7 +85,7 @@ def plot_results(
     
     # 2. Apply the 'matplotx' and 'nord' style (using your syntax)
     try:
-        plt.style.use(matplotx.styles.nord)
+        plt.style.use(matplotx.styles.github["dark"])
     except Exception:
         plt.style.use("ggplot") # Fallback style
     
@@ -141,8 +141,8 @@ def plot_results(
     ax.set_xlabel('Annualized Volatility (Risk)', fontsize=12)
     ax.set_ylabel('Annualized Return', fontsize=12)
     
-    # Set legend to bottom left
-    ax.legend(loc='lower left')
+    # Set legend to bottom right
+    ax.legend(loc='lower right')
     
     ax.grid(True, which='major', linestyle='--', linewidth=0.5)
     
