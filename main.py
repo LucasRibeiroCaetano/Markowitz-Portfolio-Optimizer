@@ -128,7 +128,6 @@ def run_analysis():
             "Max Sharpe Ratio": max_sharpe_weights,
             "Min Volatility": min_vol_weights,
             "Max Sharpe (No Cov)": naive_max_sharpe_weights,
-            "Equally Weighted (1/n)": equal_weights,
             "Max Return": max_ret_weights,
             "Min Risk": min_risk_weights
         }

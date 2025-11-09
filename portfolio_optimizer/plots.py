@@ -1,69 +1,83 @@
 import matplotlib.pyplot as plt
-import matplotx
+import matplotx # Import matplotx
 import numpy as np
 import pandas as pd # Import pandas for formatting
 
-def _plot_key_composition_table(ax, title, compositions, tickers):
+# --- NEW: Helper function to plot pie charts ---
+def _plot_composition_pies(fig, compositions, tickers_list):
     """
     Internal helper function to draw the "Key Portfolios"
-    in a clean two-column layout.
+    in a clean two-column layout, as pie charts.
     """
-    ax.text(1.05, 1.0, title,
-            transform=ax.transAxes, fontsize=14,
-            fontweight='bold', ha='left')
-
-    # Define X coordinates for the two columns
-    x_col_1 = 1.05  # X-position for first column
-    x_col_2 = 1.30  # X-position for second column
     
-    # Define Y trackers for each column
-    y_col_1_tracker = 0.92 # Start below title
-    y_col_2_tracker = 0.92 # Start below title
+    # Convert tickers list to a numpy array for easy masking
+    tickers = np.array(tickers_list)
     
-    # Split items into two columns
-    items_in_col_1 = (len(compositions) + 1) // 2
-
+    # --- Define the 2-Column Layout ---
+    items_in_col_1 = (len(compositions) + 1) // 2 # 3 items in col 1
+    
+    x_col_1 = 0.58  # X-position for first column
+    x_col_2 = 0.78  # X-position for second column
+    
+    y_col_1_tracker = 0.90 # Start Y for col 1
+    y_col_2_tracker = 0.90 # Start Y for col 2
+    
+    pie_width = 0.2  # Width of each pie
+    pie_height = 0.2 # Height of each pie
+    y_padding = 0.12  # Vertical padding between pies
+    
+    # Get the default color cycle from the style
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    
     for i, (name, weights) in enumerate(compositions.items()):
         
-        # Decide which column (X) and Y-tracker to use
+        # --- 1. Decide position ---
         if i < items_in_col_1:
             x_base = x_col_1
             current_y = y_col_1_tracker
         else:
             x_base = x_col_2
             current_y = y_col_2_tracker
+            
+        # --- 2. Filter data for the pie ---
+        # We only plot slices > 1% to keep it clean
+        mask = weights > 0.01
+        sizes = weights[mask]
+        
+        # If no slices are > 1%, use a 0.01% filter
+        if sizes.sum() == 0:
+             mask = weights > 0.0001
+             sizes = weights[mask]
+             if sizes.sum() == 0:
+                 continue # Skip if truly empty
+            
+        labels = tickers[mask]
+        
+        # --- 3. Create the new Axes for the pie ---
+        # Coordinates are [left, bottom, width, height]
+        pie_ax = fig.add_axes([
+            x_base, 
+            current_y - pie_height, 
+            pie_width, 
+            pie_height
+        ])
+        
+        # --- 4. Plot the pie chart ---
+        pie_ax.pie(
+            sizes,
+            labels=labels,
+            autopct='%1.1f%%', # Format as percentage
+            textprops={'fontsize': 8},
+            colors=colors # Use the style's colors
+        )
+        pie_ax.set_title(name, fontsize=10, y=1.05, fontweight='bold')      
 
-        # Add portfolio title
-        ax.text(x_base, current_y, f"{name}:",
-                transform=ax.transAxes, fontsize=11,
-                fontweight='bold', ha='left')
-        current_y -= 0.05 # Move down
-
-        # Format weights
-        comp = pd.DataFrame({'Weight': weights}, index=tickers)
-        comp = comp[comp['Weight'] > 0.01] # Filter 1%
-        comp = comp.sort_values(by='Weight', ascending=False)
-        
-        if comp.empty:
-            ax.text(x_base + 0.01, current_y, "  (No assets > 1%)",
-                    transform=ax.transAxes, fontsize=10,
-                    ha='left', style='italic')
-            current_y -= 0.05
-        else:
-            for ticker, row in comp.iterrows():
-                line = f"  - {ticker}: {row['Weight']:,.1%}"
-                ax.text(x_base + 0.01, current_y, line,
-                        transform=ax.transAxes, fontsize=10,
-                        ha='left')
-                current_y -= 0.04 # Move down for next line
-        
-        current_y -= 0.03 # Extra space before next portfolio
-        
-        # Update the Y-tracker for the column we just used
+        # --- 5. Update Y-tracker for the next pie ---
         if i < items_in_col_1:
-            y_col_1_tracker = current_y
+            y_col_1_tracker -= (pie_height + y_padding)
         else:
-            y_col_2_tracker = current_y
+            y_col_2_tracker -= (pie_height + y_padding)
+
 
 # --- MODIFIED PLOT_RESULTS FUNCTION ---
 def plot_results(
@@ -71,19 +85,18 @@ def plot_results(
     optimal_portfolios: dict[str, tuple[float, float]],
     sample_portfolios: dict[str, tuple[float, float]],
     individual_assets: dict[str, tuple[float, float]],
-    # --- ARGUMENTS REMOVED ---
     portfolio_compositions: dict[str, np.ndarray],
     tickers: list[str]
 ):
     """
     Plots the Efficient Frontier and overlays the
-    Key Portfolio Compositions in a clean two-column layout.
+    Key Portfolio Compositions as a stack of pie charts.
     """
     
     # 1. Get the data from the inputs
     frontier_volatilities, frontier_returns = frontier_data
     
-    # 2. Apply the 'matplotx' and 'nord' style (using your syntax)
+    # 2. Apply the 'github[dark]' style (using your correct syntax)
     try:
         plt.style.use(matplotx.styles.github["dark"])
     except Exception:
@@ -146,9 +159,10 @@ def plot_results(
     
     ax.grid(True, which='major', linestyle='--', linewidth=0.5)
     
-    # --- 10. PLOT KEY COMPOSITION TABLE ---
-    _plot_key_composition_table(
-        ax, "Key Portfolio Compositions", portfolio_compositions, tickers
+    # --- 10. PLOT KEY COMPOSITION PIE CHARTS ---
+    # We pass the main 'fig' object, not 'ax'
+    _plot_composition_pies(
+        fig, portfolio_compositions, tickers
     )
 
     # 11. Final show
