@@ -23,7 +23,7 @@ def plot_results(
     
     # 2. Apply the 'matplotx' and 'nord' style
     try:
-        plt.style.use(matplotx.styles.nord)
+        plt.style.use(matplotx.styles.github["dark"])
     except:
         plt.style.use("ggplot") # Fallback style
     
