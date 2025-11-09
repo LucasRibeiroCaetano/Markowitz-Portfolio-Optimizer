@@ -7,7 +7,9 @@ from portfolio_optimizer.model import get_portfolio_stats
 from portfolio_optimizer.optimization import (
     find_max_sharpe_portfolio,
     find_min_volatility_portfolio,
-    calculate_efficient_frontier
+    calculate_efficient_frontier,
+    # Import the naive optimizer
+    find_max_naive_sharpe_portfolio
 )
 from portfolio_optimizer.plots import plot_results
 
@@ -31,7 +33,6 @@ TICKERS = [
     'DBC',  # Broad Commodities
     'XLE'   # Energy Sector
 ]
-# Using your updated start date
 START_DATE = '2000-01-01'
 END_DATE = '2024-12-31'
 RISK_FREE_RATE = 0.02 # 2%
@@ -49,7 +50,7 @@ def run_analysis():
             end_date=END_DATE
         )
         
-        # --- 2. Calculate Optimal Portfolios ---
+        # --- 2. Calculate Optimal Portfolios (Markowitz) ---
         print("Calculating Optimal Portfolios...")
         max_sharpe_weights = find_max_sharpe_portfolio(
             mean_returns, cov_matrix, RISK_FREE_RATE
@@ -79,7 +80,7 @@ def run_analysis():
             asset_stats = get_portfolio_stats(weights, mean_returns, cov_matrix)
             individual_assets[ticker] = asset_stats
             
-        # --- 4. Calculate Sample Model Portfolios (for Analysis) ---
+        # --- 4. Calculate Sample Model Portfolios (for 'X' markers) ---
         print("Calculating Sample Portfolios...")
         num_assets = len(TICKERS)
         sample_portfolios = {} 
@@ -89,40 +90,47 @@ def run_analysis():
         sample_portfolios["Equally Weighted (1/n)"] = get_portfolio_stats(
             equal_weights, mean_returns, cov_matrix
         )
-
-        # Model 2: 100% in Highest Return Asset
+        
+        # Model 2: Calculate the Naive Sharpe Portfolio
+        individual_vols = np.sqrt(np.diag(cov_matrix))
+        naive_max_sharpe_weights = find_max_naive_sharpe_portfolio(
+            mean_returns, individual_vols, RISK_FREE_RATE
+        )
+        naive_max_sharpe_stats = get_portfolio_stats(
+            naive_max_sharpe_weights, mean_returns, cov_matrix
+        )
+        sample_portfolios["Naive Max Sharpe (No Cov)"] = naive_max_sharpe_stats
+        
+        # Model 3: 100% in Highest Return Asset
         max_ret_ticker = mean_returns.idxmax()
-        # Create and save weights for the composition table
         max_ret_weights = np.zeros(len(TICKERS))
         max_ret_weights[TICKERS.index(max_ret_ticker)] = 1.0
         sample_portfolios[f"100% {max_ret_ticker} (Max Ret)"] = individual_assets[max_ret_ticker]
 
-        # Model 3: 100% in Lowest Risk Asset
+        # Model 4: 100% in Lowest Risk Asset
         cov_variances = pd.Series(np.diag(cov_matrix), index=TICKERS)
         min_risk_ticker = cov_variances.idxmin()
-        # Create and save weights for the composition table
         min_risk_weights = np.zeros(len(TICKERS))
         min_risk_weights[TICKERS.index(min_risk_ticker)] = 1.0
         sample_portfolios[f"100% {min_risk_ticker} (Min Risk)"] = individual_assets[min_risk_ticker]
         
         # --- 5. Calculate the Efficient Frontier ---
         print("Calculating Efficient Frontier...")
+        # We no longer need the frontier_weights
         frontier_returns, frontier_volatilities = calculate_efficient_frontier(
             mean_returns, cov_matrix
         )
-        # --- CORRECTED TYPO HERE ---
-        # Was (frontier_volatilities, frontier_volatilities)
         frontier_data = (frontier_volatilities, frontier_returns)
         
         # --- 6. Create Composition Dictionary ---
-        # This will be passed to the plot function
+        # This dict is for your original table
         portfolio_compositions = {
             "Max Sharpe Ratio": max_sharpe_weights,
             "Min Volatility": min_vol_weights,
+            "Naive Max Sharpe (No Cov)": naive_max_sharpe_weights,
             "Equally Weighted (1/n)": equal_weights,
-            # --- NEW: Add the sample portfolios ---
-            "Max return": max_ret_weights,
-            "Min Risk": min_risk_weights
+            f"100% {max_ret_ticker} (Max Ret)": max_ret_weights,
+            f"100% {min_risk_ticker} (Min Risk)": min_risk_weights
         }
         
         # --- 7. Plot All Results ---
@@ -132,7 +140,7 @@ def run_analysis():
             optimal_portfolios=optimal_portfolios,
             sample_portfolios=sample_portfolios,
             individual_assets=individual_assets,
-            # Pass new composition dict to the plot
+            # Pass only the original composition table
             portfolio_compositions=portfolio_compositions,
             tickers=TICKERS
         )
