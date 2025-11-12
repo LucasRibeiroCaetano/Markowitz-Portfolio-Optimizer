@@ -3,18 +3,18 @@ import matplotx # Import matplotx
 import numpy as np
 import pandas as pd # Import pandas for formatting
 
-# --- NEW: Helper function to plot pie charts ---
+# --- MODIFIED: Pie chart helper function ---
 def _plot_composition_pies(fig, compositions, tickers_list):
     """
     Internal helper function to draw the "Key Portfolios"
-    in a clean two-column layout, as pie charts.
+    in a clean two-column layout, with legends to the right.
     """
     
     # Convert tickers list to a numpy array for easy masking
     tickers = np.array(tickers_list)
     
     # --- Define the 2-Column Layout ---
-    items_in_col_1 = (len(compositions) + 1) // 2 # 3 items in col 1
+    items_in_col_1 = (len(compositions) + 1) // 2
     
     x_col_1 = 0.58  # X-position for first column
     x_col_2 = 0.78  # X-position for second column
@@ -22,9 +22,9 @@ def _plot_composition_pies(fig, compositions, tickers_list):
     y_col_1_tracker = 0.90 # Start Y for col 1
     y_col_2_tracker = 0.90 # Start Y for col 2
     
-    pie_width = 0.2  # Width of each pie
-    pie_height = 0.2 # Height of each pie
-    y_padding = 0.12  # Vertical padding between pies
+    pie_width = 0.12   # Make pies smaller to fit legend
+    pie_height = 0.12  # Make pies smaller to fit legend
+    y_padding = 0.08   # Space between pies vertically
     
     # Get the default color cycle from the style
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -40,21 +40,19 @@ def _plot_composition_pies(fig, compositions, tickers_list):
             current_y = y_col_2_tracker
             
         # --- 2. Filter data for the pie ---
-        # We only plot slices > 1% to keep it clean
         mask = weights > 0.01
         sizes = weights[mask]
         
-        # If no slices are > 1%, use a 0.01% filter
         if sizes.sum() == 0:
              mask = weights > 0.0001
              sizes = weights[mask]
              if sizes.sum() == 0:
                  continue # Skip if truly empty
             
-        labels = tickers[mask]
+        all_labels = tickers[mask]
+        percentages = (sizes / sizes.sum()) * 100
         
         # --- 3. Create the new Axes for the pie ---
-        # Coordinates are [left, bottom, width, height]
         pie_ax = fig.add_axes([
             x_base, 
             current_y - pie_height, 
@@ -63,23 +61,40 @@ def _plot_composition_pies(fig, compositions, tickers_list):
         ])
         
         # --- 4. Plot the pie chart ---
-        pie_ax.pie(
+        # We store the 'patches' (the wedges) to use in the legend
+        patches, texts = pie_ax.pie(
             sizes,
-            labels=labels,
-            autopct='%1.1f%%', # Format as percentage
+            labels=None,    # No labels on the pie
+            autopct=None,   # No percentages on the pie
             textprops={'fontsize': 8},
-            colors=colors # Use the style's colors
+            colors=colors 
         )
-        pie_ax.set_title(name, fontsize=10, y=1.05, fontweight='bold')      
-
-        # --- 5. Update Y-tracker for the next pie ---
+        pie_ax.set_title(name, fontsize=10, y=1.05, fontweight='bold')
+        
+        # --- 5. Create Legend (MODIFIED) ---
+        # Create formatted labels for the legend
+        legend_labels = [
+            f"{label}: {pct:1.1f}%" 
+            for label, pct in zip(all_labels, percentages)
+        ]
+        
+        # Add the legend to the right of the pie chart
+        pie_ax.legend(
+            patches,
+            legend_labels,
+            loc='center left', # Position
+            bbox_to_anchor=(1.0, 0.5), # Anchor to the right
+            fontsize=8
+        )
+        
+        # --- 6. Update Y-tracker for the next pie ---
         if i < items_in_col_1:
             y_col_1_tracker -= (pie_height + y_padding)
         else:
             y_col_2_tracker -= (pie_height + y_padding)
 
 
-# --- PLOT_RESULTS FUNCTION ---
+# --- PLOT_RESULTS FUNCTION (No changes below this line) ---
 def plot_results(
     frontier_data: tuple[np.ndarray, np.ndarray],
     optimal_portfolios: dict[str, tuple[float, float]],
@@ -96,6 +111,7 @@ def plot_results(
     # 1. Get the data from the inputs
     frontier_volatilities, frontier_returns = frontier_data
     
+    # 2. Apply the 'github[dark]' style (using your correct syntax)
     try:
         plt.style.use(matplotx.styles.github["dark"])
     except Exception:
@@ -116,7 +132,7 @@ def plot_results(
         label='Efficient Frontier'
     )
     
-    # 6. Plot Individual Assets
+    # 6. Plot Individual Assets (as dots)
     asset_vols = [v[0] for v in individual_assets.values()]
     asset_rets = [v[1] for v in individual_assets.values()]
     ax.scatter(
@@ -128,7 +144,7 @@ def plot_results(
         label='Individual Assets'
     )
 
-    # 7. Plot Sample Portfolios
+    # 7. Plot Sample Portfolios (as 'X's)
     for name, (vol, ret) in sample_portfolios.items():
         ax.scatter(
             vol, 
@@ -138,7 +154,7 @@ def plot_results(
             label=f'Sample: {name}'
         )
 
-    # 8. Plot Optimal Portfolios
+    # 8. Plot Optimal Portfolios (as stars)
     for name, (vol, ret) in optimal_portfolios.items():
         ax.scatter(
             vol, 
