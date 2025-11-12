@@ -22,8 +22,8 @@ def _plot_composition_pies(fig, compositions, tickers_list):
     y_col_1_tracker = 0.90 # Start Y for col 1
     y_col_2_tracker = 0.90 # Start Y for col 2
     
-    pie_width = 0.12   # Make pies smaller to fit legend
-    pie_height = 0.12  # Make pies smaller to fit legend
+    pie_width = 0.15   # Make pies smaller to fit legend
+    pie_height = 0.15  # Make pies smaller to fit legend
     y_padding = 0.08   # Space between pies vertically
     
     # Get the default color cycle from the style
