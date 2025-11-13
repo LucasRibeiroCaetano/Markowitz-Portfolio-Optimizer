@@ -2,7 +2,8 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
 ![Libraries](https://img.shields.io/badge/Libraries-Pandas%20%7C%20NumPy%20%7C%20SciPy-orange)
-![Visualization](https://img.shields.io/badge/Visualization-Matplotlib%20%7C%20matplotx-brightgreen)
+![Visualization](https://img.shields.io/badge/Visualization-Matplotlib%20%7C%20matplotx-red)
+[![License-CC-BY-NC-4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-Green)](https://creativecommons.org/licenses/by-nc/4.0/)
 
 A command-line Python application that implements Harry Markowitz's Modern Portfolio Theory (MPT). This tool fetches historical market data for a basket of assets and runs portfolio optimization to find the **Efficient Frontier**.
 
@@ -138,3 +139,20 @@ To see all options:
 ```Bash
 python main.py --help
 ```
+
+## License
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+
+This means you are free to:
+
+- Share: copy and redistribute the material in any medium or format.
+
+- Adapt: remix, transform, and build upon the material.
+
+Under the following terms:
+
+- Attribution: You must give appropriate credit.
+
+**NonCommercial**: You may not use the material for commercial purposes.
+
+For the full license text, see: https://creativecommons.org/licenses/by-nc/4.0/
